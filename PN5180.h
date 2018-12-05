@@ -72,7 +72,7 @@ private:
 
   SPISettings PN5180_SPI_SETTINGS;
 
-  uint8_t readBuffer[508];
+  static uint8_t readBuffer[508];
   
 public:
   PN5180(uint8_t SSpin, uint8_t BUSYpin, uint8_t RSTpin);

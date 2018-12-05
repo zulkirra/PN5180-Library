@@ -36,6 +36,9 @@
 #define PN5180_RF_ON                    (0x16)
 #define PN5180_RF_OFF                   (0x17)
 
+// Define static buffer which will be shared between all instances
+uint8_t PN5180::readBuffer[508];
+
 PN5180::PN5180(uint8_t SSpin, uint8_t BUSYpin, uint8_t RSTpin) {
   PN5180_NSS = SSpin;
   PN5180_BUSY = BUSYpin;
