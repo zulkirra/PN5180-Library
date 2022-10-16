@@ -53,12 +53,11 @@ public:
    
   // ICODE SLIX2 specific commands, see https://www.nxp.com/docs/en/data-sheet/SL2S2602.pdf
   ISO15693ErrorCode getRandomNumber(uint8_t *randomData);
-  ISO15693ErrorCode setPassword(uint8_t *password, uint8_t *random);
-  ISO15693ErrorCode writePassword(uint8_t *password, uint8_t *uid);
+  ISO15693ErrorCode setPassword(uint8_t identifier, uint8_t *password, uint8_t *random);
   ISO15693ErrorCode enablePrivacy(uint8_t *password, uint8_t *random);
-  ISO15693ErrorCode unlockICODESLIX2(uint8_t *password);
-  ISO15693ErrorCode lockICODESLIX2(uint8_t *password);
-  ISO15693ErrorCode newpasswordICODESLIX2(uint8_t *newpassword, uint8_t *oldpassword, uint8_t *uid);
+  // helpers
+  ISO15693ErrorCode enablePrivacyMode(uint8_t *password);
+  ISO15693ErrorCode disablePrivacyMode(uint8_t *password);
   /*
    * Helper functions
    */
