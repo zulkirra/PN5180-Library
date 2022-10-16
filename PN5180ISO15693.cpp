@@ -84,8 +84,8 @@ ISO15693ErrorCode PN5180ISO15693::getInventory(uint8_t *uid) {
   *
   *  If Error flag is set, the following error codes are defined:
   *    01 = The command is not supported, i.e. the request code is not recognized.
-  *    02 = The command is not recognized, i.e. a format error occured.
-  *    03 = The option is not suppored.
+  *    02 = The command is not recognized, i.e. a format error occurred.
+  *    03 = The option is not supported.
   *    0F = Unknown error.
   *    10 = The specific block is not available.
   *    11 = The specific block is already locked and cannot be locked again.
@@ -99,9 +99,9 @@ ISO15693ErrorCode PN5180ISO15693::getInventory(uint8_t *uid) {
  */
 ISO15693ErrorCode PN5180ISO15693::readSingleBlock(uint8_t *uid, uint8_t blockNo, uint8_t *blockData, uint8_t blockSize) {
   //                            flags, cmd, uid,             blockNo
-  uint8_t readSingleBlock[] = { 0x62, 0x20, 1,2,3,4,5,6,7,8, blockNo }; // UID has LSB first!
+  uint8_t readSingleBlock[] = { 0x22, 0x20, 1,2,3,4,5,6,7,8, blockNo }; // UID has LSB first!
   //                              |\- high data rate
-  //                              \-- options, addressed by UID
+  //                              \-- no options, addressed by UID
   for (int i=0; i<8; i++) {
     readSingleBlock[2+i] = uid[i];
   }
@@ -165,8 +165,8 @@ ISO15693ErrorCode PN5180ISO15693::readSingleBlock(uint8_t *uid, uint8_t blockNo,
   *
   *  If Error flag is set, the following error codes are defined:
   *    01 = The command is not supported, i.e. the request code is not recognized.
-  *    02 = The command is not recognized, i.e. a format error occured.
-  *    03 = The option is not suppored.
+  *    02 = The command is not recognized, i.e. a format error occurred.
+  *    03 = The option is not supported.
   *    0F = Unknown error.
   *    10 = The specific block is not available.
   *    11 = The specific block is already locked and cannot be locked again.
@@ -180,9 +180,9 @@ ISO15693ErrorCode PN5180ISO15693::readSingleBlock(uint8_t *uid, uint8_t blockNo,
  */
 ISO15693ErrorCode PN5180ISO15693::writeSingleBlock(uint8_t *uid, uint8_t blockNo, uint8_t *blockData, uint8_t blockSize) {
   //                            flags, cmd, uid,             blockNo
-  uint8_t writeSingleBlock[] = { 0x62, 0x21, 1,2,3,4,5,6,7,8, blockNo }; // UID has LSB first!
+  uint8_t writeSingleBlock[] = { 0x22, 0x21, 1,2,3,4,5,6,7,8, blockNo }; // UID has LSB first!
   //                               |\- high data rate
-  //                               \-- options, addressed by UID
+  //                               \-- no options, addressed by UID
 
   uint8_t writeCmdSize = sizeof(writeSingleBlock) + blockSize;
   uint8_t *writeCmd = (uint8_t*)malloc(writeCmdSize);
@@ -236,8 +236,8 @@ ISO15693ErrorCode PN5180ISO15693::writeSingleBlock(uint8_t *uid, uint8_t blockNo
   *
   *  If Error flag is set, the following error codes are defined:
   *    01 = The command is not supported, i.e. the request code is not recognized.
-  *    02 = The command is not recognized, i.e. a format error occured.
-  *    03 = The option is not suppored.
+  *    02 = The command is not recognized, i.e. a format error occurred.
+  *    03 = The option is not supported.
   *    0F = Unknown error.
   *    10 = The specific block is not available.
   *    11 = The specific block is already locked and cannot be locked again.
@@ -305,9 +305,8 @@ ISO15693ErrorCode PN5180ISO15693::getSystemInfo(uint8_t *uid, uint8_t *blockSize
 
   uint8_t infoFlags = readBuffer[1];
   if (infoFlags & 0x01) { // DSFID flag
-    uint8_t dsfid = *p++;
     PN5180DEBUG("DSFID=");  // Data storage format identifier
-    PN5180DEBUG(formatHex(dsfid));
+    PN5180DEBUG(formatHex(uint8_t(*p++)));
     PN5180DEBUG("\n");
   }
 #ifdef DEBUG
@@ -348,10 +347,9 @@ ISO15693ErrorCode PN5180ISO15693::getSystemInfo(uint8_t *uid, uint8_t *blockSize
 
     *blockSize = *blockSize + 1; // range: 1-32
     *numBlocks = *numBlocks + 1; // range: 1-256
-    uint16_t viccMemSize = (*blockSize) * (*numBlocks);
 
     PN5180DEBUG("VICC MemSize=");
-    PN5180DEBUG(viccMemSize);
+    PN5180DEBUG(uint16_t(*blockSize) * (*numBlocks));
     PN5180DEBUG(" BlockSize=");
     PN5180DEBUG(*blockSize);
     PN5180DEBUG(" NumBlocks=");
@@ -363,9 +361,8 @@ ISO15693ErrorCode PN5180ISO15693::getSystemInfo(uint8_t *uid, uint8_t *blockSize
 #endif
    
   if (infoFlags & 0x08) { // IC reference
-    uint8_t icRef = *p++;
     PN5180DEBUG("IC Ref=");
-    PN5180DEBUG(formatHex(icRef));
+    PN5180DEBUG(formatHex(uint8_t(*p++)));
     PN5180DEBUG("\n");
   }
 #ifdef DEBUG
@@ -374,6 +371,88 @@ ISO15693ErrorCode PN5180ISO15693::getSystemInfo(uint8_t *uid, uint8_t *blockSize
 
   return ISO15693_EC_OK;
 }
+
+
+// ICODE SLIX specific commands
+
+/*
+ * The GET RANDOM NUMBER command is required to receive a random number from the label IC. 
+ * The passwords that will be transmitted with the SET PASSWORD,ENABLEPRIVACY and DESTROY commands 
+ * have to be calculated with the password and the random number (see Section 9.5.3.2 "SET PASSWORD")
+ */
+ISO15693ErrorCode PN5180ISO15693::getRandomNumber(uint8_t *randomData) {
+  uint8_t getrandom[] = {0x02, 0xB2, 0x04};
+  uint8_t *readBuffer;
+  ISO15693ErrorCode rc = issueISO15693Command(getrandom, sizeof(getrandom), &readBuffer);
+  if (rc == ISO15693_EC_OK) {
+    randomData[0] = readBuffer[1];
+    randomData[1] = readBuffer[2];
+  }
+  return rc;
+}
+
+/*
+ * The SET PASSWORD command enables the different passwords to be transmitted to the label 
+ * to access the different protected functionalities of the following commands. 
+ * The SET PASSWORD command has to be executed just once for the related passwords if the label is powered
+ */
+ISO15693ErrorCode PN5180ISO15693::setPassword(uint8_t identifier, uint8_t *password, uint8_t *random) {
+  uint8_t setPassword[] = {0x02, 0xB3, 0x04, 0x04, 0x00, 0x00, 0x00, 0x00};
+  uint8_t *readBuffer;
+  setPassword[3] = identifier;
+  setPassword[4] = password[0] ^ random[0];
+  setPassword[5] = password[1] ^ random[1];
+  setPassword[6] = password[2] ^ random[0];
+  setPassword[7] = password[3] ^ random[1];
+  ISO15693ErrorCode rc = issueISO15693Command(setPassword, sizeof(setPassword), &readBuffer);
+  return rc;
+}
+
+/*
+ * The ENABLE PRIVACY command enables the ICODE SLIX2 Label IC to be set to
+ * Privacy mode if the Privacy password is correct. The ICODE SLIX2 will not respond to
+ * any command except GET RANDOM NUMBER and SET PASSWORD
+ */
+ISO15693ErrorCode PN5180ISO15693::enablePrivacy(uint8_t *password, uint8_t *random) {
+  uint8_t setPrivacy[] = {0x02, 0xBA, 0x04, 0x00, 0x00, 0x00, 0x00};
+  uint8_t *readBuffer;
+  setPrivacy[3] = password[0] ^ random[0];
+  setPrivacy[4] = password[1] ^ random[1];
+  setPrivacy[5] = password[2] ^ random[0];
+  setPrivacy[6] = password[3] ^ random[1];
+  ISO15693ErrorCode rc = issueISO15693Command(setPrivacy, sizeof(setPrivacy), &readBuffer);
+  return rc;
+}
+
+
+// disable privacy mode for ICODE SLIX2 tag with given password
+ISO15693ErrorCode PN5180ISO15693::disablePrivacyMode(uint8_t *password) {
+  // get a random number from the tag
+  uint8_t random[]= {0x00, 0x00};
+  ISO15693ErrorCode rc = getRandomNumber(random);
+  if (rc != ISO15693_EC_OK) {
+    return rc;
+  }
+  
+  // set password to disable privacy mode 
+  rc = setPassword(0x04, password, random);
+  return rc; 
+}
+
+// enable privacy mode for ICODE SLIX2 tag with given password 
+ISO15693ErrorCode PN5180ISO15693::enablePrivacyMode(uint8_t *password) {
+  // get a random number from the tag
+  uint8_t random[]= {0x00, 0x00};
+  ISO15693ErrorCode rc = getRandomNumber(random);
+  if (rc != ISO15693_EC_OK) {
+    return rc;
+  }
+  
+  // enable privacy command to lock the tag
+  rc = enablePrivacy(password, random);
+  return rc; 
+}
+
 
 /*
  * ISO 15693 - Protocol
@@ -414,8 +493,8 @@ ISO15693ErrorCode PN5180ISO15693::getSystemInfo(uint8_t *uid, uint8_t *blockSize
  *
  *  If Error flag is set, the following error codes are defined:
  *    01 = The command is not supported, i.e. the request code is not recognized.
- *    02 = The command is not recognized, i.e. a format error occured.
- *    03 = The option is not suppored.
+ *    02 = The command is not recognized, i.e. a format error occurred.
+ *    03 = The option is not supported.
  *    0F = Unknown error.
  *    10 = The specific block is not available.
  *    11 = The specific block is already locked and cannot be locked again.
@@ -439,8 +518,14 @@ ISO15693ErrorCode PN5180ISO15693::issueISO15693Command(uint8_t *cmd, uint8_t cmd
   sendData(cmd, cmdLen);
   delay(10);
 
-  if (0 == (getIRQStatus() & RX_SOF_DET_IRQ_STAT)) {
-    return EC_NO_CARD;
+  uint32_t irqR = getIRQStatus();
+  if (0 == (irqR & RX_SOF_DET_IRQ_STAT)) {
+	return EC_NO_CARD;
+  }
+  
+  while(!(irqR & RX_IRQ_STAT)) {
+	delay(1);
+	irqR = getIRQStatus();
   }
   
   uint32_t rxStatus;
@@ -531,7 +616,7 @@ const __FlashStringHelper *PN5180ISO15693::strerror(ISO15693ErrorCode errno) {
     case ISO15693_EC_OK: return F("OK!");
     case ISO15693_EC_NOT_SUPPORTED: return F("Command is not supported!");
     case ISO15693_EC_NOT_RECOGNIZED: return F("Command is not recognized!");
-    case ISO15693_EC_OPTION_NOT_SUPPORTED: return F("Option is not suppored!");
+    case ISO15693_EC_OPTION_NOT_SUPPORTED: return F("Option is not supported!");
     case ISO15693_EC_UNKNOWN_ERROR: return F("Unknown error!");
     case ISO15693_EC_BLOCK_NOT_AVAILABLE: return F("Specified block is not available!");
     case ISO15693_EC_BLOCK_ALREADY_LOCKED: return F("Specified block is already locked!");
