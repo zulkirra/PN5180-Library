@@ -523,10 +523,17 @@ ISO15693ErrorCode PN5180ISO15693::issueISO15693Command(uint8_t *cmd, uint8_t cmd
 	return EC_NO_CARD;
   }
   
+  // The following line prevents code from continuing until the RX_IRQ_STAT flag 
+  // is set in the IRQ_STATUS register, which signifies the end of RF reception
+  // But, should the card be removed from the reader quickly before reception is complete,
+  // this bit will never be received and the code will hang at this point.
+  // TODO implement a reasonable timeout in which to expect the bit to be read, as in https://github.com/playfultechnology/PN5180-Library/blob/e64468d65906c207bdaf900a1645615c71f3d5ca/PN5180.cpp#L489-L494
+  /*
   while(!(irqR & RX_IRQ_STAT)) {
 	delay(1);
 	irqR = getIRQStatus();
   }
+  */
   
   uint32_t rxStatus;
   readRegister(RX_STATUS, &rxStatus);
