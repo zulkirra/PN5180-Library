@@ -725,6 +725,7 @@ ISO15693ErrorCode PN5180ISO15693::issueISO15693Command(uint8_t *cmd, uint8_t cmd
 
   uint32_t irqR = getIRQStatus();
   if (0 == (irqR & RX_SOF_DET_IRQ_STAT)) {
+	PN5180DEBUG("Didnt detect RX_SOF_DET_IRQ_STAT after sendData");
 	return EC_NO_CARD;
   }
   
@@ -769,6 +770,7 @@ ISO15693ErrorCode PN5180ISO15693::issueISO15693Command(uint8_t *cmd, uint8_t cmd
 
   uint32_t irqStatus = getIRQStatus();
   if (0 == (RX_SOF_DET_IRQ_STAT & irqStatus)) { // no card detected
+     PN5180DEBUG("Didnt detect RX_SOF_DET_IRQ_STAT after readData");
      clearIRQStatus(TX_IRQ_STAT | IDLE_IRQ_STAT);
      return EC_NO_CARD;
   }
@@ -780,7 +782,7 @@ ISO15693ErrorCode PN5180ISO15693::issueISO15693Command(uint8_t *cmd, uint8_t cmd
     PN5180DEBUG("ERROR code=");
     PN5180DEBUG(formatHex(errorCode));
     PN5180DEBUG(" - ");
-    PN5180DEBUG(strerror(errorCode));
+    PN5180DEBUG(strerror((ISO15693ErrorCode)errorCode));
     PN5180DEBUG("\n");
 
     if (errorCode >= 0xA0) { // custom command error codes
