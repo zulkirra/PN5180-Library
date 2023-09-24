@@ -740,6 +740,14 @@ ISO15693ErrorCode PN5180ISO15693::issueISO15693Command(uint8_t *cmd, uint8_t cmd
 	irqR = getIRQStatus();
   }
   */
+  unsigned long startedWaiting = millis();
+  while (!(irqR & RX_IRQ_STAT)) {
+      irqR = getIRQStatus();
+      if (millis() - startedWaiting > commandTimeout) {
+          PN5180DEBUG("Didnt detect RX_IRQ_STAT after sendData");
+          return EC_NO_CARD;
+      }
+  }
   
   uint32_t rxStatus;
   readRegister(RX_STATUS, &rxStatus);
