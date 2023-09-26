@@ -74,31 +74,36 @@ ISO15693ErrorCode PN5180ISO15693::getInventory(uint8_t *uid) {
  * https://www.nxp.com.cn/docs/en/application-note/AN12650.pdf
  * Request format: SOF, Req.Flags, Inventory, AFI (opt.), Mask len, Mask value, CRC16, EOF
  * Response format: SOF, Resp.Flags, DSFID, UID, CRC16, EOF
- *
  */
 ISO15693ErrorCode PN5180ISO15693::getInventoryMultiple(uint8_t *uid, uint8_t maxTags, uint8_t *numCard) {
   PN5180DEBUG("PN5180ISO15693: Get Inventory...");
   uint16_t collision[maxTags];
   *numCard = 0;
-  uint8_t numCol = 0;
-  inventoryPoll(uid, maxTags, numCard, &numCol, collision);
+  uint8_t numCollisions = 0;
+  // Send an inventory command and listen for the response
+  inventoryPoll(uid, maxTags, numCard, &numCollisions, collision);
   PN5180DEBUG("Number of collisions=");
-  PN5180DEBUG(numCol);
+  PN5180DEBUG(numCollisions);
   PN5180DEBUG("\n");
-
-  while(numCol){                                                 // 5+ Continue until no collisions detected
+	// Continue to call inventory until no further collisions detected
+	// (numCard will be incremented automatically on each call) 
+  while(numCollisions > 0){                                                 
 #ifdef DEBUG
     printf("inventoryPoll: Polling with mask=0x%X\n", collision[0]);
 #endif
-    inventoryPoll(uid, maxTags, numCard, &numCol, collision);
-    numCol--;
-    for(int i=0; i<numCol; i++){
+    inventoryPoll(uid, maxTags, numCard, &numCollisions, collision);
+    numCollisions--;
+    for(int i=0; i<numCollisions; i++){
       collision[i] = collision[i+1];
     }
   }
   return ISO15693_EC_OK;
 }
 
+/**
+ * https://www.nxp.com.cn/docs/en/application-note/AN12650.pdf
+ * 4.2.1 Example Code and 4.2.2 Description
+ */
 ISO15693ErrorCode PN5180ISO15693::inventoryPoll(uint8_t *uid, uint8_t maxTags, uint8_t *numCard, uint8_t *numCol, uint16_t *collision){
   uint8_t maskLen = 0;
   if(*numCol > 0){
