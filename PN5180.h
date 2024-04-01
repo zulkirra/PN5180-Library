@@ -84,7 +84,7 @@ private:
 public:
   PN5180(uint8_t SSpin, uint8_t BUSYpin, uint8_t RSTpin, SPIClass& spi=SPI);
 
-  void begin();
+  void begin(uint32_t clock=7000000);
   void end();
 
   /*

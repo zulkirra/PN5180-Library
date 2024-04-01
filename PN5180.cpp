@@ -51,12 +51,10 @@ PN5180::PN5180(uint8_t SSpin, uint8_t BUSYpin, uint8_t RSTpin, SPIClass& spi) :
    * extended by signal line BUSY. The maximum SPI speed is 7 Mbps and fixed to CPOL
    * = 0 and CPHA = 0.
    */
-  // Settings for PN5180: 7Mbps, MSB first, SPI_MODE0 (CPOL=0, CPHA=0)
-  SPI_SETTINGS = SPISettings(7000000, MSBFIRST, SPI_MODE0);
 }
 
 
-void PN5180::begin() {
+void PN5180::begin(uint32_t clock) {
   pinMode(PN5180_NSS, OUTPUT);
   pinMode(PN5180_BUSY, INPUT);
   pinMode(PN5180_RST, OUTPUT);
@@ -64,6 +62,8 @@ void PN5180::begin() {
   digitalWrite(PN5180_NSS, HIGH); // disable
   digitalWrite(PN5180_RST, HIGH); // no reset
 
+  // Default settings for PN5180: 7Mbps, MSB first, SPI_MODE0 (CPOL=0, CPHA=0)
+  SPI_SETTINGS = SPISettings(clock, MSBFIRST, SPI_MODE0);
   PN5180_SPI.begin();
   PN5180DEBUG(F("SPI pinout: "));
   PN5180DEBUG(F("SS=")); PN5180DEBUG(SS);
